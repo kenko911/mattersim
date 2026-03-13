@@ -747,7 +747,13 @@ class Potential(nn.Module):
             raise NotImplementedError
         else:
             strain = torch.zeros_like(input["cell"], device=self.device)
-            volume = torch.linalg.det(input["cell"])
+            volume = torch.abs(
+                torch.sum(
+                    input["cell"][:, 0]
+                    * torch.cross(input["cell"][:, 1], input["cell"][:, 2], dim=1),
+                    dim=1,
+                )
+            )
             if include_forces is True:
                 input["atom_pos"].requires_grad_(True)
             if include_stresses is True:
@@ -830,12 +836,16 @@ class Potential(nn.Module):
             os.makedirs(dir_name)
         checkpoint = {
             "model_name": self.model_name,
-            "model": self.model.module.state_dict()
-            if hasattr(self.model, "module")
-            else self.model.state_dict(),
-            "model_args": self.model.module.get_model_args()
-            if hasattr(self.model, "module")
-            else self.model.get_model_args(),
+            "model": (
+                self.model.module.state_dict()
+                if hasattr(self.model, "module")
+                else self.model.state_dict()
+            ),
+            "model_args": (
+                self.model.module.get_model_args()
+                if hasattr(self.model, "module")
+                else self.model.get_model_args()
+            ),
             "optimizer": self.optimizer.state_dict(),
             "ema": self.ema.state_dict(),
             "scheduler": self.scheduler.state_dict(),
