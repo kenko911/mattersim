@@ -770,7 +770,13 @@ class Potential(nn.Module):
                     input["atom_pos"],
                     (torch.eye(3, device=self.device)[None, ...] + strain_augment),
                 )
-                volume = torch.linalg.det(input["cell"])
+                volume = torch.abs(
+                    torch.sum(
+                        input["cell"][:, 0]
+                        * torch.cross(input["cell"][:, 1], input["cell"][:, 2], dim=1),
+                        dim=1,
+                    )
+                )
 
             energies = self.model.forward(input, dataset_idx)
             output["total_energy"] = energies
